@@ -209,7 +209,7 @@ AI_SOURCES = [
 
 # ---------------------------------------------------------------------------
 # 그룹 채용 포털 (type=career_portal) — 수집은 1일 1회, robots.txt 준수
-# GS는 그룹 통합 채용 사이트가 없어 제외 (2026-10-27 사용자 결정)
+# GS(통합 채용 사이트 없음), 롯데(robots.txt 403)는 제외 (사용자 결정)
 # ---------------------------------------------------------------------------
 PORTAL_SOURCES = [
     SourceSeed(
@@ -295,40 +295,24 @@ PORTAL_SOURCES = [
         },
     ),
     SourceSeed(
-        name="롯데",
-        type=SourceType.CAREER_PORTAL,
-        url="https://recruit.lotte.co.kr",
-        tier=1,
-        active=False,
-        access=SourceAccess.FREE,
-        language=SourceLanguage.KO,
-        config={
-            "inactive_reason": (
-                "2026-10-27: robots.txt가 403 (페이지는 403/200으로 검사마다 다름). "
-                "수집 허용 여부를 확인할 수 없어 보수적으로 비활성. 우회하지 않음"
-            ),
-            "note": "3·6·9·12월 정기 공고. 캠페인 사이트(lotte-36912recruit.com)도 병행",
-            "evidence": [
-                "https://cse.snu.ac.kr/en/community/notice/24184",
-            ],
-        },
-    ),
-    SourceSeed(
         name="포스코",
         type=SourceType.CAREER_PORTAL,
-        url="https://recruit.posco.com",
+        url="https://www.poscorecruit.com",
         tier=1,
         active=False,
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
             "inactive_reason": (
-                "2026-10-27: recruit.posco.com 도메인이 DNS에서 조회되지 않음. "
-                "2026 하반기 공채는 bit.ly 단축 링크로만 안내되어 실제 URL 미확인"
+                "robots.txt 미확인: www.poscorecruit.com이 이 환경의 허용 도메인에 없음. "
+                "확인되면 active=True"
             ),
-            "note": "2023·2024 공채 접수처. 2026 하반기 접수 URL은 미확인",
+            "note": (
+                "2026 하반기 공채 공고의 bit.ly 링크가 이 주소로 301 리다이렉트 (2026-10-28 확인). "
+                "예전 주소 recruit.posco.com은 DNS 조회 안 됨"
+            ),
             "evidence": [
-                "https://newsroom.posco.com/kr/%ED%8F%AC%EC%8A%A4%EC%BD%94%EA%B7%B8%EB%A3%B9-2023%EB%85%84-%ED%95%98%EB%B0%98%EA%B8%B0-%EC%8B%A0%EC%9E%85%EC%82%AC%EC%9B%90-%EA%B3%B5%EC%B1%84-%EC%8B%9C%EC%9E%91",
+                "https://cse.snu.ac.kr/en/community/notice/25534",
             ],
         },
     ),
@@ -398,7 +382,7 @@ API_SOURCES = [
 ALL_SOURCES = AI_SOURCES + PORTAL_SOURCES + API_SOURCES
 
 # 목록에서 뺀 소스. seed 실행 시 DB에 남아 있으면 지운다 (아직 수집 데이터가 없을 때만 안전).
-REMOVED_SOURCE_NAMES = ["GS"]
+REMOVED_SOURCE_NAMES = ["GS", "롯데"]
 
 
 def seed() -> None:
