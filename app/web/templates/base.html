@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %} · AI Career Brief</title>
+  {# 외부 CDN에 의존하지 않도록 npm 공식 패키지 파일을 static/vendor에 넣어 둔다 (docs/decisions.md) #}
+  <script src="/static/vendor/tailwindcss-browser-4.3.3.js"></script>
+  <script src="/static/vendor/htmx-2.0.11.min.js" defer></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <div class="flex min-h-screen flex-col md:flex-row">
+    {# 사이드바: 데스크톱은 왼쪽 세로, 모바일은 위쪽 가로 메뉴 #}
+    <nav class="flex shrink-0 items-center gap-1 overflow-x-auto border-b border-slate-200 bg-white px-3 py-2
+                md:w-56 md:flex-col md:items-stretch md:border-b-0 md:border-r md:px-3 md:py-6">
+      <a href="/" class="mr-3 whitespace-nowrap font-bold text-indigo-600 md:mb-6 md:mr-0 md:px-3 md:text-lg">
+        AI Career Brief
+      </a>
+      {% for url, label, icon in nav_items %}
+        {% set active = request.url.path == url %}
+        <a href="{{ url }}"
+           class="flex items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm
+                  {{ 'bg-indigo-50 font-semibold text-indigo-700' if active else 'text-slate-600 hover:bg-slate-100' }}">
+          <span>{{ icon }}</span><span>{{ label }}</span>
+        </a>
+      {% endfor %}
+      <form method="post" action="/logout" class="ml-auto md:ml-0 md:mt-auto">
+        <button class="whitespace-nowrap rounded-lg px-3 py-2 text-sm text-slate-400 hover:text-slate-600">
+          로그아웃
+        </button>
+      </form>
+    </nav>
+
+    <main class="flex-1 px-4 py-6 md:px-10 md:py-10">
+      <div class="mx-auto max-w-4xl">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+  </div>
+</body>
+</html>
