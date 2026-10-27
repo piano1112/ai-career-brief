@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>로그인 · AI Career Brief</title>
+  <script src="/static/vendor/tailwindcss-browser-4.3.3.js"></script>
+</head>
+<body class="flex min-h-screen items-center justify-center bg-slate-50 px-4 text-slate-800">
+  <form method="post" action="/login" class="w-full max-w-sm rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+    <h1 class="mb-6 text-center text-xl font-bold text-indigo-600">AI Career Brief</h1>
+
+    {% if not_configured %}
+      <p class="mb-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
+        ADMIN_PASSWORD_HASH가 설정되지 않았습니다. README의 "로그인 설정"을 참고하세요.
+      </p>
+    {% endif %}
+    {% if error %}
+      <p class="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
+    {% endif %}
+
+    <label class="mb-1 block text-sm text-slate-600" for="username">아이디</label>
+    <input id="username" name="username" autocomplete="username" required
+           class="mb-4 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none">
+
+    <label class="mb-1 block text-sm text-slate-600" for="password">비밀번호</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required
+           class="mb-6 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none">
+
+    <button class="w-full rounded-lg bg-indigo-600 py-2 font-semibold text-white hover:bg-indigo-700">로그인</button>
+  </form>
+</body>
+</html>
