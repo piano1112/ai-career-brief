@@ -1,6 +1,6 @@
 # 수집 소스 조사 (2026-10-27)
 
-SPEC 섹션 7의 초기 소스 21개에 대한 조사 결과. seed 데이터는 `app/db/seed_sources.py`.
+SPEC 섹션 7의 초기 소스에 대한 조사 결과 (GS는 그룹 통합 채용 사이트가 없어 사용자 결정으로 제외 → 20개). seed 데이터는 `app/db/seed_sources.py`.
 
 - **조사 방법**: 웹 검색으로 공식 URL과 그 근거(공식 뉴스룸, 공식 문서, 대학 취업센터에 게시된 공고문, 언론 보도)를 찾았다.
 - **아직 안 한 것**: 사이트에 직접 접속하는 검증(HTTP 응답, robots.txt, RSS 파싱). 조사한 클라우드 환경의 네트워크 정책이 해당 도메인을 막고 있었다.
@@ -8,7 +8,18 @@ SPEC 섹션 7의 초기 소스 21개에 대한 조사 결과. seed 데이터는 
 
 근거 수준: **A** = 공식 출처(해당 기관 사이트·뉴스룸), **B** = 공고문 인용(대학 취업센터·언론), **C** = 제3자 집계 사이트.
 
-## AI 동향 (10곳) — RSS 확인 3곳 + API 1곳
+## AI 동향 (10곳) — RSS 3곳 + API 1곳 + HTML 수집 6곳
+
+RSS가 없는 곳은 목록 페이지 HTML에서 기사 링크를 뽑는다 (`type=html`, `app/agents/background/collectors/html_list.py`).
+사이트별 차이는 `config["link_pattern"]`(기사 URL 경로 정규식) 하나뿐이다.
+
+| HTML 소스 | 상태 |
+|---|---|
+| Anthropic | ✅ **실제 수집 확인** (2026-10-27, robots.txt 허용, 기사 18개, 패턴 `^/news/[^/]+$`) |
+| Stanford HAI | 패턴 `^/news/[^/]+$` 설정 (검색된 기사 URL 형태 기준), 접속은 미검증 → active |
+| Meta AI, Epoch AI | 패턴 미확인 → inactive. verify 스크립트가 출력하는 경로 통계로 패턴 결정 |
+| SPRi, 과기정통부 | 목록 페이지 URL부터 미확인 → inactive |
+
 
 | 소스 | URL | RSS | 근거 | seed 상태 |
 |---|---|---|---|---|
@@ -23,7 +34,7 @@ SPEC 섹션 7의 초기 소스 21개에 대한 조사 결과. seed 데이터는 
 | SPRi | spri.kr | ❓ 못 찾음 | — | inactive |
 | 과기정통부 | msit.go.kr | ❓ 공식 RSS 못 찾음 (뉴스와이어 제3자 RSS만 있음) | — | inactive |
 
-## 그룹 채용 포털 (10곳) — URL 확인 9곳
+## 그룹 채용 포털 (9곳, GS 제외)
 
 | 그룹 | URL | 근거 | 메모 |
 |---|---|---|---|
@@ -35,7 +46,6 @@ SPEC 섹션 7의 초기 소스 21개에 대한 조사 결과. seed 데이터는 
 | 롯데 | recruit.lotte.co.kr | B [서울대 공지 2026.9](https://cse.snu.ac.kr/en/community/notice/24184) | 3·6·9·12월 정기 공고 |
 | 포스코 | recruit.posco.com | A [포스코 뉴스룸 2023](https://newsroom.posco.com/kr/%ED%8F%AC%EC%8A%A4%EC%BD%94%EA%B7%B8%EB%A3%B9-2023%EB%85%84-%ED%95%98%EB%B0%98%EA%B8%B0-%EC%8B%A0%EC%9E%85%EC%82%AC%EC%9B%90-%EA%B3%B5%EC%B1%84-%EC%8B%9C%EC%9E%91) | 2026 하반기 접수 URL은 미확인 |
 | HD현대 | recruit.hd.com | B [서울대 공지 2024](https://cse.snu.ac.kr/en/community/notice/23438) | ⚠️ 2026 하반기 공채는 캠페인 사이트(hd-recruit2026.com)로 접수 |
-| GS | ❓ | — | **그룹 통합 사이트 못 찾음.** GS칼텍스는 recruit.gscaltex.com |
 | KT | recruit.kt.com/careers | B [고려대 공지 2026](https://biz.korea.ac.kr/cdc/recruitment/recruitment_view?no=14469) | 그룹사 공고 포함 |
 
 ## 공식 API
@@ -46,8 +56,8 @@ SPEC 섹션 7의 초기 소스 21개에 대한 조사 결과. seed 데이터는 
 
 ## 남은 결정 / TODO
 
-1. **RSS가 없는 6곳**(Anthropic, Meta AI, Epoch, HAI, SPRi, 과기정통부): HTML 페이지에서 직접 수집할지, 빼고 다른 소스로 대체할지.
-2. **GS**: 계열사 사이트(GS칼텍스 등)를 넣을지, 그룹 제외할지.
+1. ~~RSS 없는 6곳~~ → HTML 수집으로 결정. Meta AI·Epoch·SPRi·과기정통부는 네트워크가 열린 곳에서 패턴 확인 필요.
+2. ~~GS~~ → 제외로 결정.
 3. **HD현대·롯데처럼 공채마다 캠페인 사이트를 따로 여는 곳**: 상시 포털만 수집하고, 캠페인 사이트는 사용자가 공고 Inbox로 직접 입력(M3).
 4. **포털 공고 목록이 로그인 없이 보이는지 + JS 렌더링이 필요한지**: verify 스크립트 결과로 판단. M5에서 Playwright로 확인.
 5. **공채속보 API**: 공공데이터포털에서 키 신청 → 엔드포인트 확인.

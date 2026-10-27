@@ -3,7 +3,8 @@
 원칙
 - URL은 추측하지 않는다. 공식 사이트·공식 공지·언론 보도 등 근거가 있는 것만 넣는다.
   근거는 config["evidence"], 조사 날짜는 config["checked_on"] (자세한 내용: docs/sources.md).
-- RSS가 없거나 URL을 확인하지 못한 소스는 active=False + config["inactive_reason"].
+- RSS가 없는 사이트는 type=HTML + config["link_pattern"] (collectors/html_list.py).
+- URL·패턴을 확인하지 못한 소스는 active=False + config["inactive_reason"].
 - "실제로 받아지는지 / robots.txt가 허용하는지"는 scripts/verify_sources.py로 따로 확인한다.
 
 실행 (이름 기준 upsert — 여러 번 실행해도 중복 생기지 않음):
@@ -36,12 +37,16 @@ class SourceSeed:
 AI_SOURCES = [
     SourceSeed(
         name="Anthropic News",
-        type=SourceType.RSS,
+        type=SourceType.HTML,
         url="https://www.anthropic.com/news",
         tier=1,
-        active=False,
+        active=True,
         config={
-            "inactive_reason": "공식 RSS 없음. 뉴스 페이지 HTML 수집이 필요 (결정 대기)",
+            # 기사: /news/<slug>, 카테고리(/news/product 등)는 제목 길이로 걸러짐
+            "link_pattern": r"^/news/[^/]+$",
+            "note": (
+                "공식 RSS 없음 → 목록 페이지 HTML 수집. 2026-10-27 직접 접속해 18개 기사 추출 확인"
+            ),
             "evidence": [
                 "https://feeder.co/discover/df052969a2/anthropic-com-news",
             ],
@@ -75,12 +80,16 @@ AI_SOURCES = [
     ),
     SourceSeed(
         name="Meta AI Blog",
-        type=SourceType.RSS,
+        type=SourceType.HTML,
         url="https://ai.meta.com/blog/",
         tier=1,
         active=False,
         config={
-            "inactive_reason": "공식 RSS 없음. HTML 수집이 필요 (결정 대기)",
+            "inactive_reason": (
+                "link_pattern 미확인: 이 환경에서 사이트 접속이 막혀 있음. "
+                "python -m scripts.verify_sources --all 의 경로 통계를 보고 설정"
+            ),
+            "note": "공식 RSS 없음. JS 렌더링 페이지일 가능성 → 링크 0개면 Playwright(M5)",
             "evidence": [
                 "https://feeder.co/knowledge-base/rss-content/ai-news-rss-feeds/",
             ],
@@ -114,14 +123,16 @@ AI_SOURCES = [
     ),
     SourceSeed(
         name="Epoch AI",
-        type=SourceType.RSS,
+        type=SourceType.HTML,
         url="https://epoch.ai/latest",
         tier=2,
         active=False,
         config={
             "inactive_reason": (
-                "공식 RSS 확인 못 함 (제3자 미러만 발견). Substack 피드 여부 확인 필요"
+                "link_pattern 미확인: 이 환경에서 사이트 접속이 막혀 있음. "
+                "python -m scripts.verify_sources --all 의 경로 통계를 보고 설정"
             ),
+            "note": "공식 RSS 못 찾음. /latest가 연구·데이터·뉴스레터 통합 목록",
             "evidence": [
                 "https://epochai.substack.com/about",
             ],
@@ -129,38 +140,49 @@ AI_SOURCES = [
     ),
     SourceSeed(
         name="Stanford HAI News",
-        type=SourceType.RSS,
+        type=SourceType.HTML,
         url="https://hai.stanford.edu/news",
         tier=2,
-        active=False,
+        active=True,
         config={
-            "inactive_reason": "RSS 확인 못 함 (주간 이메일 구독만 확인)",
+            # 검색 결과의 기사 URL이 모두 hai.stanford.edu/news/<slug> 형태
+            "link_pattern": r"^/news/[^/]+$",
+            "note": "RSS 못 찾음 → 목록 페이지 HTML 수집. 페이지 접속은 아직 미검증",
+            "evidence": [
+                "https://hai.stanford.edu/news/ai-doesnt-have-to-mean-layoffs",
+            ],
         },
     ),
     SourceSeed(
         name="소프트웨어정책연구소(SPRi)",
-        type=SourceType.RSS,
+        type=SourceType.HTML,
         url="https://spri.kr",
         tier=2,
         active=False,
         config={
-            "inactive_reason": "RSS 확인 못 함",
+            "inactive_reason": (
+                "보고서 목록 페이지 URL과 link_pattern 미확인 (사이트 접속이 막혀 있음)"
+            ),
         },
     ),
     SourceSeed(
         name="과학기술정보통신부 보도자료",
-        type=SourceType.RSS,
+        type=SourceType.HTML,
         url="https://www.msit.go.kr",
         tier=1,
         active=False,
         config={
-            "inactive_reason": "공식 RSS 확인 못 함 (뉴스와이어의 제3자 RSS만 발견)",
+            "inactive_reason": (
+                "보도자료 목록 페이지 URL과 link_pattern 미확인 (사이트 접속이 막혀 있음)"
+            ),
+            "note": "개별 보도자료는 msit.go.kr/bbs/view.do 형태 (국회도서관 목록에서 확인)",
         },
     ),
 ]
 
 # ---------------------------------------------------------------------------
 # 그룹 채용 포털 (type=career_portal) — 수집은 1일 1회, robots.txt 준수
+# GS는 그룹 통합 채용 사이트가 없어 제외 (2026-10-27 사용자 결정)
 # ---------------------------------------------------------------------------
 PORTAL_SOURCES = [
     SourceSeed(
@@ -269,19 +291,6 @@ PORTAL_SOURCES = [
         },
     ),
     SourceSeed(
-        name="GS",
-        type=SourceType.CAREER_PORTAL,
-        url="",
-        tier=1,
-        active=False,
-        config={
-            "inactive_reason": (
-                "그룹 통합 채용 사이트 확인 못 함. "
-                "계열사별 사이트만 확인 (예: GS칼텍스 recruit.gscaltex.com)"
-            ),
-        },
-    ),
-    SourceSeed(
         name="KT",
         type=SourceType.CAREER_PORTAL,
         url="https://recruit.kt.com/careers",
@@ -323,6 +332,9 @@ API_SOURCES = [
 
 ALL_SOURCES = AI_SOURCES + PORTAL_SOURCES + API_SOURCES
 
+# 목록에서 뺀 소스. seed 실행 시 DB에 남아 있으면 지운다 (아직 수집 데이터가 없을 때만 안전).
+REMOVED_SOURCE_NAMES = ["GS"]
+
 
 def seed() -> None:
     with SessionLocal() as session:
@@ -339,6 +351,10 @@ def seed() -> None:
                 s.active,
                 config,
             )
+        for name in REMOVED_SOURCE_NAMES:
+            removed = session.scalar(select(Source).where(Source.name == name))
+            if removed is not None:
+                session.delete(removed)
         session.commit()
     active = sum(s.active for s in ALL_SOURCES)
     print(f"seeded {len(ALL_SOURCES)} sources ({active} active)")

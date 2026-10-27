@@ -98,6 +98,8 @@ class SourceType(enum.StrEnum):
     RSS = "rss"
     API = "api"
     CAREER_PORTAL = "career_portal"
+    # RSS가 없는 사이트의 목록 페이지 (SPEC에 없던 값, docs/decisions.md 010)
+    HTML = "html"
 
 
 class BriefingStatus(enum.StrEnum):

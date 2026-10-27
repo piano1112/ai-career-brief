@@ -141,5 +141,6 @@ migrations/            # Alembic
 tests/
 docs/decisions.md      # 설계 결정 기록
 docs/sources.md        # 수집 소스 조사 결과
+docs/costs.md          # 운영 비용 추정
 scripts/               # verify_sources.py (소스 검증)
 ```

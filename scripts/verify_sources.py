@@ -5,6 +5,7 @@ app/db/seed_sources.py의 각 소스에 대해 확인한다:
   2. HTTP 응답 코드 (리다이렉트 후 최종 URL 포함)
   3. type=rss  → feedparser로 파싱되는지, 항목 수, 최신 항목 날짜
      type=api  → JSON으로 파싱되는지, 항목 수
+     type=html → link_pattern으로 기사 링크가 뽑히는지 (패턴이 없으면 경로 통계 출력)
      career_portal → 응답 크기 (작으면 JS 렌더링이 필요할 가능성 → Playwright)
 
 실행 (네트워크가 열린 환경에서):
@@ -23,6 +24,7 @@ from urllib.robotparser import RobotFileParser
 import feedparser
 import httpx
 
+from app.agents.background.collectors.html_list import extract_links, path_prefix_counts
 from app.db.models import SourceType
 from app.db.seed_sources import ALL_SOURCES, SourceSeed
 
@@ -61,9 +63,23 @@ def check_content(source: SourceSeed, res: httpx.Response) -> str:
         except ValueError:
             return "JSON 아님"
         return f"JSON {type(data).__name__} ({len(data)}개)"
+    if source.type == SourceType.HTML:
+        return check_html(source, res)
     size_kb = len(res.content) / 1024
     hint = " — 내용이 적음, JS 렌더링 필요 가능성" if size_kb < 10 else ""
     return f"HTML {size_kb:.0f}KB{hint}"
+
+
+def check_html(source: SourceSeed, res: httpx.Response) -> str:
+    pattern = source.config.get("link_pattern")
+    if not pattern:
+        # 패턴을 정하기 위한 참고 정보: 링크가 많이 몰린 경로가 기사 목록일 가능성이 높다.
+        top = ", ".join(f"`{path}`({n})" for path, n in path_prefix_counts(res.text, source.url))
+        return f"link_pattern 없음 — 경로 통계: {top or '링크 없음 (JS 렌더링 가능성)'}"
+    links = extract_links(res.text, source.url, pattern)
+    if not links:
+        return "기사 링크 0개 — 패턴 확인 또는 JS 렌더링 필요"
+    return f"기사 {len(links)}개, 예: {links[0].title[:40]}"
 
 
 def verify(source: SourceSeed, client: httpx.Client) -> dict[str, str]:
