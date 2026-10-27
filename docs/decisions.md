@@ -46,3 +46,19 @@
 - **결정**: worker는 APScheduler 3.x의 `BlockingScheduler` (timezone `Asia/Seoul`), job은 `scheduler.py` 한 곳에 등록. `coalesce=True`, `max_instances=1`.
 - **이유**: 4.x는 아직 pre-release. job 정의가 코드에 있으므로 DB job store가 필요 없다. 밀린 실행은 한 번만 돌린다.
 - **대안**: cron + 스크립트, Celery beat (규모 대비 과함), 이후 AWS EventBridge (SPEC 배포 계획).
+
+## 008. 기본 모델 `CLAUDE_MODEL=claude-opus-5-5`
+
+- **결정**: 대화 에이전트 기본 모델은 Claude Opus 5.5.
+- **이유**: 현재 Anthropic이 권장하는 기본 모델이고, tool use와 한국어/영어 혼용 대화의 품질을 우선했다. 1인용이라 호출 수가 적어서 비용 차이가 작다. 가격은 입력 $4 / 출력 $20 (100만 토큰당, 2026-10 기준).
+- **M2 구현 시 주의할 API 특성**:
+  - thinking을 끌 수 없다. 깊이는 `output_config.effort`로만 조절하고, 기본값이 `medium`이니 명시적으로 설정한다.
+  - `tool_choice`로 도구 호출을 강제(`any`/`tool`)하면 400 에러가 난다 → `auto` + 프롬프트로 유도한다.
+  - 대화 기록은 append-only로 다룬다 (이전 턴을 수정하면 thinking 블록이 무효화됨). `message.content`를 JSONB로 둔 이유와 맞물린다 (005).
+- **대안**: Claude Sonnet 5.5 ($2 / $10), Claude Haiku 5.5 ($0.10 / $0.50). 백그라운드 대량 요약·점수화(M5)에는 더 싼 모델이나 Batches API(50% 할인)가 적합할 수 있다. 그때 `llm_usage` 실측값을 보고 `CLAUDE_MODEL_BACKGROUND` 같은 별도 변수를 둘지 결정한다.
+
+## 009. 소스 seed는 "근거 있는 URL만" + 검증은 스크립트로 분리
+
+- **결정**: `app/db/seed_sources.py`에는 공식·공고문 근거가 있는 URL만 넣고 근거 링크를 `config`에 저장한다. 실제 접속·robots.txt·RSS 파싱 검증은 `scripts/verify_sources.py`로 분리한다.
+- **이유**: SPEC의 "추측 URL 금지". 채용 사이트 주소는 자주 바뀐다(예: HD현대·롯데의 캠페인 사이트). 그래서 "왜 이 URL인지"와 "지금도 동작하는지"를 따로 확인할 수 있어야 한다.
+- **대안**: 수집 job이 실패하면 그때 비활성화. 하지만 처음부터 robots.txt를 확인하지 않고 요청하게 되므로 채택하지 않음.

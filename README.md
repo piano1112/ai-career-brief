@@ -4,7 +4,7 @@
 대화를 통해 사용자를 점점 더 정확히 알아가는 개인용 웹앱. 명세는 [SPEC.md](SPEC.md),
 설계 결정 기록은 [docs/decisions.md](docs/decisions.md).
 
-**현재 상태: Milestone 1 (뼈대)** — 로그인, 기본 레이아웃, DB 스키마, worker 스케줄러.
+**현재 상태: Milestone 1 (뼈대) + 소스 조사** — 로그인, 기본 레이아웃, DB 스키마, worker 스케줄러, 수집 소스 seed.
 
 ## 구성
 
@@ -101,6 +101,18 @@ pytest
 ruff check . && ruff format --check .
 ```
 
+### 수집 소스 seed / 검증
+
+```bash
+python -m app.db.seed_sources
+```
+
+```bash
+python -m scripts.verify_sources --all --write
+```
+
+조사 근거는 [docs/sources.md](docs/sources.md), 검증 결과는 `docs/sources-verification.md`에 저장된다.
+
 ### 스키마를 바꿀 때
 
 `app/db/models.py`를 수정한 뒤:
@@ -128,4 +140,6 @@ worker.py              # 백그라운드 엔트리포인트
 migrations/            # Alembic
 tests/
 docs/decisions.md      # 설계 결정 기록
+docs/sources.md        # 수집 소스 조사 결과
+scripts/               # verify_sources.py (소스 검증)
 ```
