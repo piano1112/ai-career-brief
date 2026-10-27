@@ -2,6 +2,7 @@
 
 > 이 문서는 Claude Code가 구현할 때 기준이 되는 명세다. 기획 배경은 별도 기획 문서에 있다.
 > 작성일: 2026-10-28 · 사용자: 1명 (개발자 본인)
+> 개정: SPEC_ADDENDUM_01(유료/무료 소스 구분과 구독 추천) 반영
 
 ---
 
@@ -122,10 +123,21 @@
 | application_id FK null | title | start_at timestamptz | end_at null | kind enum(`deadline`, `test`, `interview`, `manual`) |
 
 ### source — 수집 소스
-| name | type enum(`rss`, `api`, `career_portal`) | url | tier int (1=최상위) | active bool | config json |
+| name | type enum(`rss`, `api`, `career_portal`, `html`) | url | tier int (1=최상위) | active bool | config json |
+
+> `html`: RSS가 없는 사이트의 목록 페이지. `config.link_pattern`(기사 URL 정규식)으로 링크 추출 (docs/decisions.md 010)
+
+| 컬럼 (ADDENDUM_01) | 타입 | 설명 |
+|---|---|---|
+| access | enum `free` / `freemium` / `paid`, null = 미확인 | 본문 접근 가능 여부 |
+| language | enum `ko` / `en`, null = 미확인 | 소스 언어 |
+| subscribed | bool, default false | 사용자가 구독 중인지 (seed가 덮어쓰지 않음) |
+| price_note | text, nullable | 가격 메모. 확인한 값과 확인 날짜를 함께 기록 (예: "2026-12 확인: ...") |
 
 ### item — 수집된 동향 항목
-| source_id FK | title | url (unique) | published_at | raw (text) | summary | score float null | analyzed_at null |
+| source_id FK | title | url (unique) | published_at | raw (text) | summary | score float null | analyzed_at null | paywalled bool default false |
+
+> paywalled: 본문이 유료라 제목·공개 요약만 있는 항목 (ADDENDUM_01). `access=paid` 소스의 RSS는 제목·공개 요약만 저장한다.
 
 ### briefing / briefing_entry
 - briefing: `for_date date unique`, `content json`, `html text`, `status enum(draft, published)`, `published_at`
@@ -177,7 +189,7 @@
 ### 5.3 백그라운드 에이전트 (worker)
 | job | 주기 | 내용 |
 |---|---|---|
-| `collect_rss` | 3시간 | source(type=rss) 수집 → item upsert (url unique) |
+| `collect_rss` | 3시간 | source(type=rss) 수집 → item upsert (url unique). 유료 소스는 제목·공개 요약만 + `paywalled=true` |
 | `collect_portals` | 1일 1회 (새벽) | Playwright로 그룹 채용 포털 렌더링 → LLM으로 공고 추출 → job_posting upsert, 새 공고만 표시 |
 | `collect_public_api` | 1일 1회 | 고용24 공채속보 API |
 | `analyze_new` | 수집 후 | analyzed_at null인 item/posting만 user_fact 기준으로 점수화·요약 |
@@ -185,6 +197,7 @@
 | `watch_deadlines` | 1일 2회 | D-3, D-1 마감 → to_agent=chat 이벤트 (D-1은 high) |
 | `update_draft` | 분석 후 | 다음날 briefing(draft) 갱신 |
 | `publish_briefing` | 매일 07:00 | draft 조립 → HTML 렌더 → published |
+| `evaluate_paid_sources` | 월 1회 (Phase 2) | 유료 소스 구독 추천 판단 → 근거가 충분할 때만 `subscription_suggestion` 이벤트 (섹션 7.1) |
 
 ---
 
@@ -203,8 +216,14 @@
 
 ## 7. 데이터 소스 (초기 seed)
 
-### 채용 포털 (type=career_portal) — 그룹 10곳
-삼성, SK, 현대차, LG, 한화, 롯데, 포스코, HD현대, GS, KT
+### 소스 선정 원칙 (ADDENDUM_01)
+- **권위가 최우선.** 한국어·영어 모두 포함하고, 언어로 거르지 않는다.
+- 유료 소스도 후보에 포함한다. 무료 여부보다 권위가 먼저다.
+- 구독 예산·추천 빈도·추천 기준 같은 사용자 선호는 **코드나 설정 상수로 두지 않는다.** 대화 에이전트가 대화로 물어보고 `user_fact`(category=`preference`)로 저장·갱신한다. (예: 첫 구독 추천 시점에 "구독에 한 달 얼마까지 쓸 생각 있어?")
+
+### 채용 포털 (type=career_portal) — 그룹 9곳
+삼성, SK, 현대차, LG, 한화, 롯데, 포스코, HD현대, KT
+- GS는 그룹 통합 채용 사이트가 없어 제외 (2026-10-27 결정)
 - URL은 구현 시 각 그룹 공식 채용 사이트를 확인해서 seed에 넣는다 (추측 URL 금지)
 - 각 사이트 robots.txt 확인, 요청 간격 충분히, User-Agent 명시, 1일 1회
 - 접근 불가(로그인 필수 등)한 곳은 `active=false` + 사유를 config에 기록
@@ -215,10 +234,28 @@
 
 ### AI 동향 (type=rss/api) — 10곳
 Anthropic, OpenAI, Google DeepMind, Meta AI, NVIDIA 블로그, Hugging Face Daily Papers (`GET https://huggingface.co/api/daily_papers`), Epoch AI, Stanford HAI, 소프트웨어정책연구소(SPRi), 과기정통부 AI 보도자료
-- RSS 제공 여부를 하나씩 확인. RSS 없는 곳은 일단 `active=false`로 두고 보고
+- RSS 제공 여부를 하나씩 확인. RSS 없는 곳은 목록 페이지 HTML 수집(`type=html`)
+- 조사 결과와 근거: docs/sources.md
 
 ### 하지 않는 것
 - 잡코리아·캐치·사람인 등 채용 플랫폼 자동 수집 금지 (사용자가 공고 Inbox로 직접 입력)
+- 페이월 우회 금지: 유료 본문 스크래핑, 아카이브·캐시·미러 사이트 우회 금지 (ADDENDUM_01)
+- 사용자 계정으로 유료 사이트 로그인 대행 금지, 자격증명 저장 금지 (ADDENDUM_01)
+
+### 7.1 유료 소스 구독 추천 (Phase 2, ADDENDUM_01 — 지금 구현하지 않음)
+예정: 12/15–12/21 동향 분석과 함께
+
+**구독 추천 (백그라운드 → 대화)**
+- 백그라운드 job `evaluate_paid_sources`: 월 1회 (빈도도 user_fact로 조정 가능)
+- 유료 소스별 최근 4주: 관련도 높은 paywalled item 수 / 무료 소스와의 주제 중복률(겹치면 가치 낮음) / 지원 중인 회사·직무 관련 비중
+- 근거가 충분할 때만 `agent_event`(to_agent=`chat`, type=`subscription_suggestion`) 발행
+- 대화 에이전트가 전달할 때: 관련 글 수, 중복률, 대표 제목 몇 개 / 가격과 무료 체험 여부(추천 시점에 확인, 추측 금지) / 추천 강도(강력 추천·검토·아직 불필요) / 사용자 예산(user_fact) 대비 판단
+- 구독을 밀어붙이지 않는다. 거절하면 이유를 user_fact로 저장하고 같은 추천을 반복하지 않는다.
+
+**구독 후 콘텐츠 반영 — 뉴스레터 Inbox**
+- 구독 중인 유료 뉴스레터(이메일)를 붙여넣거나 전달하면 에이전트가 읽고 해당 소스의 item으로 저장 → 브리핑 반영
+- 공고 Inbox와 같은 입력 구조 재사용
+- `subscribed=true`인 소스의 항목만 본문 저장
 
 ---
 
@@ -282,7 +319,7 @@ WORK24_API_KEY=
 | 12/1 | 매일 사용 시작 |
 | 12/1–12/7 | 대화형 피드백 |
 | 12/8–12/14 | 이력서·자소서 |
-| 12/15–12/21 | 동향 분석, 포털 확대 |
+| 12/15–12/21 | 동향 분석, 포털 확대, 유료 소스 구독 추천 (7.1) |
 | 12/22–12/25 | 다듬기, README → 완성 |
 
 ---

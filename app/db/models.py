@@ -102,6 +102,19 @@ class SourceType(enum.StrEnum):
     HTML = "html"
 
 
+class SourceAccess(enum.StrEnum):
+    """본문 접근 가능 여부 (SPEC_ADDENDUM_01)."""
+
+    FREE = "free"
+    FREEMIUM = "freemium"  # 일부 글만 무료
+    PAID = "paid"
+
+
+class SourceLanguage(enum.StrEnum):
+    KO = "ko"
+    EN = "en"
+
+
 class BriefingStatus(enum.StrEnum):
     DRAFT = "draft"
     PUBLISHED = "published"
@@ -175,6 +188,14 @@ class Source(Base):
     active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     # 소스별 설정. 비활성화 사유도 여기에 기록한다 (예: {"inactive_reason": "로그인 필수"}).
     config: Mapped[dict] = mapped_column(JSONB, default=dict, server_default="{}")
+    # null = 아직 확인 못 함. 추측해서 채우지 않는다.
+    access: Mapped[SourceAccess | None] = mapped_column(pg_enum(SourceAccess, "source_access"))
+    language: Mapped[SourceLanguage | None] = mapped_column(
+        pg_enum(SourceLanguage, "source_language")
+    )
+    subscribed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    # 가격 메모. 확인한 날짜를 함께 적는다 (예: "2026-12 확인: 월 $10, 무료 체험 7일")
+    price_note: Mapped[str | None] = mapped_column(Text)
 
 
 class Item(Base):
@@ -191,6 +212,8 @@ class Item(Base):
     score: Mapped[float | None] = mapped_column(Float)
     # null이면 아직 LLM 분석 전 → 증분 처리 대상
     analyzed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), index=True)
+    # 본문이 유료라 제목·공개 요약만 있는 항목 (페이월 우회 금지)
+    paywalled: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
 
 
 class JobPosting(Base):
