@@ -1,5 +1,22 @@
 # 수집 소스 조사 (2026-10-27)
 
+## ✅ 실제 접속 검증 결과 (2026-10-28, 네트워크 허용 후)
+
+전체 표: [sources-verification.md](sources-verification.md). 20곳 중 **17곳 active**.
+
+- **AI 동향 10곳 모두 수집 가능.** 검색으로 못 찾았던 공식 피드를 직접 접속해서 찾았다:
+  - Epoch AI: `epoch.ai/atom.xml` (HTML `<link rel=alternate>`에 있었음) → RSS로 전환
+  - 과기정통부: `msit.go.kr/user/rss/rss.do?bbsSeqNo=94` ("RSS 이용안내" 페이지) → RSS로 전환
+  - Meta AI(`^/blog/[^/]+/?$`, 정적 HTML에서 5개), SPRi(보고서 목록 `/posts?code=data_all`, 12개) → HTML 수집 패턴 확정
+- **채용 포털**: 삼성·SK는 정적 HTML이 있음. 현대차(접속 대기열 페이지), LG·한화·HD현대·KT(HTML 2~3KB)는 JS 렌더링 필요 → M5에서 Playwright.
+- **비활성 2곳**:
+  - 롯데: robots.txt가 403 → 허용 여부를 확인할 수 없어 보수적으로 비활성. 다른 User-Agent로 다시 시도하는 등의 우회는 하지 않았다.
+  - 포스코: `recruit.posco.com`이 DNS에서 조회되지 않는다. 2026 하반기 공고는 bit.ly 단축 링크로만 안내돼 있고, bit.ly는 허용 도메인이 아니라 확인하지 못했다.
+- **고용24 공채속보 API**: 무료, 활용신청 시 **자동승인**, 이용허락범위는 출처표시·비상업·변경금지(공공누리 4유형). 요청 주소는 활용신청 후 상세 화면에서 확인해야 한다.
+
+---
+
+
 SPEC 섹션 7의 초기 소스에 대한 조사 결과 (GS는 그룹 통합 채용 사이트가 없어 사용자 결정으로 제외 → 20개). seed 데이터는 `app/db/seed_sources.py`.
 
 - **조사 방법**: 웹 검색으로 공식 URL과 그 근거(공식 뉴스룸, 공식 문서, 대학 취업센터에 게시된 공고문, 언론 보도)를 찾았다.
