@@ -5,6 +5,8 @@
   근거는 config["evidence"], 조사 날짜는 config["checked_on"] (자세한 내용: docs/sources.md).
 - RSS가 없는 사이트는 type=HTML + config["link_pattern"] (collectors/html_list.py).
 - URL·패턴을 확인하지 못한 소스는 active=False + config["inactive_reason"].
+- access(무료/유료)·language는 SPEC_ADDENDUM_01. 현재 seed에는 유료 소스가 없다
+  (기업 공식 블로그·공공기관·채용 포털·공공데이터 API).
 - "실제로 받아지는지 / robots.txt가 허용하는지"는 scripts/verify_sources.py로 따로 확인한다.
 
 실행 (이름 기준 upsert — 여러 번 실행해도 중복 생기지 않음):
@@ -15,7 +17,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import select
 
-from app.db.models import Source, SourceType
+from app.db.models import Source, SourceAccess, SourceLanguage, SourceType
 from app.db.session import SessionLocal
 
 CHECKED_ON = "2026-10-27"
@@ -28,6 +30,9 @@ class SourceSeed:
     url: str
     tier: int  # 1 = 1차 출처(기업·기관 공식), 2 = 연구기관 분석·집계
     active: bool
+    # SPEC_ADDENDUM_01. None = 확인 못 함 (추측해서 채우지 않는다)
+    access: SourceAccess | None
+    language: SourceLanguage | None
     config: dict = field(default_factory=dict)
 
 
@@ -41,6 +46,8 @@ AI_SOURCES = [
         url="https://www.anthropic.com/news",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             # 기사: /news/<slug>, 카테고리(/news/product 등)는 제목 길이로 걸러짐
             "link_pattern": r"^/news/[^/]+$",
@@ -58,6 +65,8 @@ AI_SOURCES = [
         url="https://openai.com/news/rss.xml",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             "note": "피드 항목이 날짜순이 아닐 수 있음 → 수집 시 published로 정렬",
             "evidence": [
@@ -72,6 +81,8 @@ AI_SOURCES = [
         url="https://deepmind.google/blog/rss.xml",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             "evidence": [
                 "https://feeder.co/knowledge-base/rss-content/ai-news-rss-feeds/",
@@ -84,6 +95,8 @@ AI_SOURCES = [
         url="https://ai.meta.com/blog/",
         tier=1,
         active=False,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             "inactive_reason": (
                 "link_pattern 미확인: 이 환경에서 사이트 접속이 막혀 있음. "
@@ -101,6 +114,8 @@ AI_SOURCES = [
         url="https://blogs.nvidia.com/feed/",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             "note": "NVIDIA RSS 이용 조건: 개인·비상업적 정보 목적만 허용",
             "evidence": [
@@ -115,6 +130,8 @@ AI_SOURCES = [
         url="https://huggingface.co/api/daily_papers",
         tier=2,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             "evidence": [
                 "SPEC.md 섹션 7 (사용자 지정)",
@@ -127,6 +144,8 @@ AI_SOURCES = [
         url="https://epoch.ai/latest",
         tier=2,
         active=False,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             "inactive_reason": (
                 "link_pattern 미확인: 이 환경에서 사이트 접속이 막혀 있음. "
@@ -144,6 +163,8 @@ AI_SOURCES = [
         url="https://hai.stanford.edu/news",
         tier=2,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.EN,
         config={
             # 검색 결과의 기사 URL이 모두 hai.stanford.edu/news/<slug> 형태
             "link_pattern": r"^/news/[^/]+$",
@@ -159,6 +180,8 @@ AI_SOURCES = [
         url="https://spri.kr",
         tier=2,
         active=False,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "inactive_reason": (
                 "보고서 목록 페이지 URL과 link_pattern 미확인 (사이트 접속이 막혀 있음)"
@@ -171,6 +194,8 @@ AI_SOURCES = [
         url="https://www.msit.go.kr",
         tier=1,
         active=False,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "inactive_reason": (
                 "보도자료 목록 페이지 URL과 link_pattern 미확인 (사이트 접속이 막혀 있음)"
@@ -191,6 +216,8 @@ PORTAL_SOURCES = [
         url="https://www.samsungcareers.com",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "note": "지원은 회원가입 필요. 공고 목록이 비로그인으로 보이는지 확인 필요",
             "evidence": [
@@ -204,6 +231,8 @@ PORTAL_SOURCES = [
         url="https://www.skcareers.com",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "note": "근거가 2020년 기사 → 현재 운영 여부 확인 필요",
             "evidence": [
@@ -217,6 +246,8 @@ PORTAL_SOURCES = [
         url="https://talent.hyundai.com",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "note": "현대차 단독 포털 (기아 등 일부 계열사는 별도 사이트)",
             "evidence": [
@@ -230,6 +261,8 @@ PORTAL_SOURCES = [
         url="https://careers.lg.com",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "note": "LG전자(lge-recruit.com), LG디스플레이(lgd-recruit.com)는 자체 사이트도 사용",
             "evidence": [
@@ -243,6 +276,8 @@ PORTAL_SOURCES = [
         url="https://www.hanwhain.com",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "evidence": [
                 "https://newstomato.com/ReadNews.aspx?no=541744",
@@ -255,6 +290,8 @@ PORTAL_SOURCES = [
         url="https://recruit.lotte.co.kr",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "note": "3·6·9·12월 정기 공고. 캠페인 사이트(lotte-36912recruit.com)도 병행",
             "evidence": [
@@ -268,6 +305,8 @@ PORTAL_SOURCES = [
         url="https://recruit.posco.com",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "note": "2023·2024 공채 접수처. 2026 하반기 접수 URL은 미확인",
             "evidence": [
@@ -281,6 +320,8 @@ PORTAL_SOURCES = [
         url="https://recruit.hd.com",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "note": (
                 "2024 하반기 접수처. 2026 하반기 공채는 hd-recruit2026.com(캠페인 사이트)로 접수"
@@ -296,6 +337,8 @@ PORTAL_SOURCES = [
         url="https://recruit.kt.com/careers",
         tier=1,
         active=True,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "evidence": [
                 "https://biz.korea.ac.kr/cdc/recruitment/recruitment_view?no=14469",
@@ -314,6 +357,8 @@ API_SOURCES = [
         url="https://www.data.go.kr/data/15031951/openapi.do",
         tier=1,
         active=False,
+        access=SourceAccess.FREE,
+        language=SourceLanguage.KO,
         config={
             "inactive_reason": (
                 "엔드포인트·파라미터 미확인 + 인증키(WORK24_API_KEY) 필요. url은 API 문서 페이지"
@@ -351,6 +396,8 @@ def seed() -> None:
                 s.active,
                 config,
             )
+            row.access, row.language = s.access, s.language
+            # subscribed, price_note는 사용자 상태라 seed가 덮어쓰지 않는다.
         for name in REMOVED_SOURCE_NAMES:
             removed = session.scalar(select(Source).where(Source.name == name))
             if removed is not None:

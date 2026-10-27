@@ -61,3 +61,11 @@ RSS가 없는 곳은 목록 페이지 HTML에서 기사 링크를 뽑는다 (`ty
 3. **HD현대·롯데처럼 공채마다 캠페인 사이트를 따로 여는 곳**: 상시 포털만 수집하고, 캠페인 사이트는 사용자가 공고 Inbox로 직접 입력(M3).
 4. **포털 공고 목록이 로그인 없이 보이는지 + JS 렌더링이 필요한지**: verify 스크립트 결과로 판단. M5에서 Playwright로 확인.
 5. **공채속보 API**: 공공데이터포털에서 키 신청 → 엔드포인트 확인.
+
+## 유료/무료·언어 (SPEC_ADDENDUM_01, 2026-10-28 반영)
+
+현재 seed 20곳은 모두 `access=free`다. 유료 소스는 아직 없다.
+- 영어(en) 8곳: Anthropic, OpenAI, Google DeepMind, Meta AI, NVIDIA, Hugging Face, Epoch AI, Stanford HAI
+- 한국어(ko) 12곳: SPRi, 과기정통부, 채용 포털 9곳, 고용24 공채속보
+- 근거 수준: 기업 공식 블로그·공공기관·채용 포털·공공데이터 API라는 소스 성격으로 판단했다. Epoch AI는 [제3자 디렉터리](https://www.toolmage.com/de/tool/epoch-ai/)에서 "보고서·뉴스레터 전부 무료"로 확인. 각 소스의 본문을 열어 페이월을 직접 확인한 것은 아니다 → verify 실행 때 함께 확인.
+- 권위 기준으로 유료 후보(예: 해외 AI 전문 매체, 국내 경제지)를 추가할지는 별도 결정.

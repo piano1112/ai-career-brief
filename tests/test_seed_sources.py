@@ -31,3 +31,10 @@ def test_active_html_sources_have_link_pattern() -> None:
     for s in ALL_SOURCES:
         if s.type == SourceType.HTML and s.active:
             assert s.config.get("link_pattern"), s.name
+
+
+def test_access_and_language_filled_or_todo() -> None:
+    # 확인 못 한 값은 None으로 두고 config에 TODO를 남긴다 (SPEC_ADDENDUM_01).
+    for s in ALL_SOURCES:
+        if s.access is None or s.language is None:
+            assert "TODO" in str(s.config), s.name
