@@ -2,7 +2,7 @@
 
 ## ✅ 실제 접속 검증 결과 (2026-10-28, 네트워크 허용 후)
 
-전체 표: [sources-verification.md](sources-verification.md). 20곳 중 **17곳 active**.
+전체 표: [sources-verification.md](sources-verification.md). 최종 19곳 중 **18곳 active** (GS·롯데 제외, 공채속보 API는 키 발급 대기).
 
 - **AI 동향 10곳 모두 수집 가능.** 검색으로 못 찾았던 공식 피드를 직접 접속해서 찾았다:
   - Epoch AI: `epoch.ai/atom.xml` (HTML `<link rel=alternate>`에 있었음) → RSS로 전환
@@ -11,7 +11,7 @@
 - **채용 포털**: 삼성·SK는 정적 HTML이 있음. 현대차(접속 대기열 페이지), LG·한화·HD현대·KT(HTML 2~3KB)는 JS 렌더링 필요 → M5에서 Playwright.
 - **비활성 2곳**:
   - 롯데: robots.txt가 403 → 허용 여부를 확인할 수 없음. 다른 User-Agent로 다시 시도하는 등의 우회는 하지 않았다. → **제외 (사용자 결정)**, 공고 Inbox로 입력.
-  - 포스코: 예전 주소 `recruit.posco.com`은 DNS에서 조회되지 않는다. 2026 하반기 공고의 bit.ly 링크가 `www.poscorecruit.com`으로 301 리다이렉트된다 → seed URL을 교체했다. robots.txt는 허용 도메인 추가 후 확인.
+  - 포스코: 예전 주소 `recruit.posco.com`은 DNS에서 조회되지 않는다. 2026 하반기 공고의 bit.ly 링크가 `www.poscorecruit.com`으로 301 리다이렉트된다 → seed URL을 교체했다. 2026-10-28 확인: robots.txt 없음(404) → 허용, 정적 HTML 187KB → **active**.
 - **고용24 공채속보 API**: 무료, 활용신청 시 **자동승인**, 이용허락범위는 출처표시·비상업·변경금지(공공누리 4유형). 요청 주소는 활용신청 후 상세 화면에서 확인해야 한다.
 
 ---

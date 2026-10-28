@@ -299,14 +299,11 @@ PORTAL_SOURCES = [
         type=SourceType.CAREER_PORTAL,
         url="https://www.poscorecruit.com",
         tier=1,
-        active=False,
+        active=True,
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
-            "inactive_reason": (
-                "robots.txt 미확인: www.poscorecruit.com이 이 환경의 허용 도메인에 없음. "
-                "확인되면 active=True"
-            ),
+            "checked": "2026-10-28 확인: robots.txt 없음(404, 허용), 200, 정적 HTML 187KB",
             "note": (
                 "2026 하반기 공채 공고의 bit.ly 링크가 이 주소로 301 리다이렉트 (2026-10-28 확인). "
                 "예전 주소 recruit.posco.com은 DNS 조회 안 됨"
