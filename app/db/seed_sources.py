@@ -94,15 +94,16 @@ AI_SOURCES = [
         type=SourceType.HTML,
         url="https://ai.meta.com/blog/",
         tier=1,
-        active=False,
+        active=True,
         access=SourceAccess.FREE,
         language=SourceLanguage.EN,
         config={
-            "inactive_reason": (
-                "link_pattern 미확인: 이 환경에서 사이트 접속이 막혀 있음. "
-                "python -m scripts.verify_sources --all 의 경로 통계를 보고 설정"
+            "link_pattern": r"^/blog/[^/]+/?$",
+            "note": (
+                "공식 RSS 없음 → 목록 페이지 HTML 수집. "
+                "2026-10-27 직접 접속 확인: 정적 HTML에서 기사 5개. "
+                "나머지는 JS로 더 불러오는 것으로 보임 → 필요하면 Playwright(M5)"
             ),
-            "note": "공식 RSS 없음. JS 렌더링 페이지일 가능성 → 링크 0개면 Playwright(M5)",
             "evidence": [
                 "https://feeder.co/knowledge-base/rss-content/ai-news-rss-feeds/",
             ],
@@ -140,20 +141,19 @@ AI_SOURCES = [
     ),
     SourceSeed(
         name="Epoch AI",
-        type=SourceType.HTML,
-        url="https://epoch.ai/latest",
+        type=SourceType.RSS,
+        url="https://epoch.ai/atom.xml",
         tier=2,
-        active=False,
+        active=True,
         access=SourceAccess.FREE,
         language=SourceLanguage.EN,
         config={
-            "inactive_reason": (
-                "link_pattern 미확인: 이 환경에서 사이트 접속이 막혀 있음. "
-                "python -m scripts.verify_sources --all 의 경로 통계를 보고 설정"
+            "note": (
+                "공식 Atom 피드 (연구·데이터 인사이트·뉴스레터 통합). "
+                "2026-10-27 직접 접속 확인: 50개"
             ),
-            "note": "공식 RSS 못 찾음. /latest가 연구·데이터·뉴스레터 통합 목록",
             "evidence": [
-                "https://epochai.substack.com/about",
+                "https://epoch.ai/latest 의 <link rel=alternate type=application/atom+xml>",
             ],
         },
     ),
@@ -177,37 +177,39 @@ AI_SOURCES = [
     SourceSeed(
         name="소프트웨어정책연구소(SPRi)",
         type=SourceType.HTML,
-        url="https://spri.kr",
+        url="https://spri.kr/posts?code=data_all",
         tier=2,
-        active=False,
+        active=True,
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
-            "inactive_reason": (
-                "보고서 목록 페이지 URL과 link_pattern 미확인 (사이트 접속이 막혀 있음)"
-            ),
+            "link_pattern": r"^/posts/view/\d+$",
+            "note": "RSS 없음 → 보고서 전체 목록 페이지 HTML 수집. 2026-10-27 직접 접속 확인: 12개",
+            "evidence": [
+                "https://spri.kr/posts?code=data_all",
+            ],
         },
     ),
     SourceSeed(
         name="과학기술정보통신부 보도자료",
-        type=SourceType.HTML,
-        url="https://www.msit.go.kr",
+        type=SourceType.RSS,
+        url="https://www.msit.go.kr/user/rss/rss.do?bbsSeqNo=94",
         tier=1,
-        active=False,
+        active=True,
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
-            "inactive_reason": (
-                "보도자료 목록 페이지 URL과 link_pattern 미확인 (사이트 접속이 막혀 있음)"
-            ),
-            "note": "개별 보도자료는 msit.go.kr/bbs/view.do 형태 (국회도서관 목록에서 확인)",
+            "note": "공식 RSS (보도자료 게시판 bbsSeqNo=94). 2026-10-27 직접 접속 확인",
+            "evidence": [
+                "https://www.msit.go.kr/contents/cont.do?sCode=user&mPid=147&mId=173",
+            ],
         },
     ),
 ]
 
 # ---------------------------------------------------------------------------
 # 그룹 채용 포털 (type=career_portal) — 수집은 1일 1회, robots.txt 준수
-# GS는 그룹 통합 채용 사이트가 없어 제외 (2026-10-27 사용자 결정)
+# GS(통합 채용 사이트 없음), 롯데(robots.txt 403)는 제외 (사용자 결정)
 # ---------------------------------------------------------------------------
 PORTAL_SOURCES = [
     SourceSeed(
@@ -219,6 +221,7 @@ PORTAL_SOURCES = [
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
+            "checked": "2026-10-27 확인: robots 허용, 200, 정적 HTML 56KB",
             "note": "지원은 회원가입 필요. 공고 목록이 비로그인으로 보이는지 확인 필요",
             "evidence": [
                 "https://news.samsung.com/kr/%ec%82%bc%ec%84%b1-2023%eb%85%84-%ed%95%98%eb%b0%98%ea%b8%b0-%ea%b3%b5%ec%b1%84-%ec%8b%a4%ec%8b%9c",
@@ -234,6 +237,7 @@ PORTAL_SOURCES = [
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
+            "checked": "2026-10-27 확인: robots 허용, 200, 정적 HTML 33KB",
             "note": "근거가 2020년 기사 → 현재 운영 여부 확인 필요",
             "evidence": [
                 "https://kbmaeil.com/article/202009060287254",
@@ -249,6 +253,10 @@ PORTAL_SOURCES = [
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
+            "checked": (
+                "2026-10-27 확인: robots 허용, "
+                "접속 대기열 페이지(netFunnel)로 리다이렉트 → Playwright 필요"
+            ),
             "note": "현대차 단독 포털 (기아 등 일부 계열사는 별도 사이트)",
             "evidence": [
                 "https://www.wikitree.co.kr/articles/1125154",
@@ -264,6 +272,7 @@ PORTAL_SOURCES = [
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
+            "checked": "2026-10-27 확인: robots 허용, 200, HTML 2KB → JS 렌더링 필요(Playwright)",
             "note": "LG전자(lge-recruit.com), LG디스플레이(lgd-recruit.com)는 자체 사이트도 사용",
             "evidence": [
                 "https://cse.snu.ac.kr/en/community/notice/24980",
@@ -279,38 +288,28 @@ PORTAL_SOURCES = [
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
+            "checked": "2026-10-27 확인: robots 허용, 200, HTML 3KB → JS 렌더링 필요(Playwright)",
             "evidence": [
                 "https://newstomato.com/ReadNews.aspx?no=541744",
             ],
         },
     ),
     SourceSeed(
-        name="롯데",
-        type=SourceType.CAREER_PORTAL,
-        url="https://recruit.lotte.co.kr",
-        tier=1,
-        active=True,
-        access=SourceAccess.FREE,
-        language=SourceLanguage.KO,
-        config={
-            "note": "3·6·9·12월 정기 공고. 캠페인 사이트(lotte-36912recruit.com)도 병행",
-            "evidence": [
-                "https://cse.snu.ac.kr/en/community/notice/24184",
-            ],
-        },
-    ),
-    SourceSeed(
         name="포스코",
         type=SourceType.CAREER_PORTAL,
-        url="https://recruit.posco.com",
+        url="https://www.poscorecruit.com",
         tier=1,
         active=True,
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
-            "note": "2023·2024 공채 접수처. 2026 하반기 접수 URL은 미확인",
+            "checked": "2026-10-28 확인: robots.txt 없음(404, 허용), 200, 정적 HTML 187KB",
+            "note": (
+                "2026 하반기 공채 공고의 bit.ly 링크가 이 주소로 301 리다이렉트 (2026-10-28 확인). "
+                "예전 주소 recruit.posco.com은 DNS 조회 안 됨"
+            ),
             "evidence": [
-                "https://newsroom.posco.com/kr/%ED%8F%AC%EC%8A%A4%EC%BD%94%EA%B7%B8%EB%A3%B9-2023%EB%85%84-%ED%95%98%EB%B0%98%EA%B8%B0-%EC%8B%A0%EC%9E%85%EC%82%AC%EC%9B%90-%EA%B3%B5%EC%B1%84-%EC%8B%9C%EC%9E%91",
+                "https://cse.snu.ac.kr/en/community/notice/25534",
             ],
         },
     ),
@@ -323,6 +322,7 @@ PORTAL_SOURCES = [
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
+            "checked": "2026-10-27 확인: robots 허용, 200, HTML 2KB → JS 렌더링 필요(Playwright)",
             "note": (
                 "2024 하반기 접수처. 2026 하반기 공채는 hd-recruit2026.com(캠페인 사이트)로 접수"
             ),
@@ -340,6 +340,7 @@ PORTAL_SOURCES = [
         access=SourceAccess.FREE,
         language=SourceLanguage.KO,
         config={
+            "checked": "2026-10-27 확인: robots 허용, 200, HTML 2KB → JS 렌더링 필요(Playwright)",
             "evidence": [
                 "https://biz.korea.ac.kr/cdc/recruitment/recruitment_view?no=14469",
             ],
@@ -378,7 +379,7 @@ API_SOURCES = [
 ALL_SOURCES = AI_SOURCES + PORTAL_SOURCES + API_SOURCES
 
 # 목록에서 뺀 소스. seed 실행 시 DB에 남아 있으면 지운다 (아직 수집 데이터가 없을 때만 안전).
-REMOVED_SOURCE_NAMES = ["GS"]
+REMOVED_SOURCE_NAMES = ["GS", "롯데"]
 
 
 def seed() -> None:

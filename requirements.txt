@@ -13,3 +13,4 @@ apscheduler>=3.10,<4
 # 수집 (scripts/verify_sources.py, Milestone 5 수집 job)
 httpx>=0.27
 feedparser>=6.0
+beautifulsoup4>=4.12
