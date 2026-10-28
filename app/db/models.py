@@ -11,12 +11,14 @@ import uuid
 from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     Date,
     DateTime,
     Enum,
     Float,
     ForeignKey,
+    Identity,
     Integer,
     Text,
     func,
@@ -171,6 +173,9 @@ class Message(Base):
     content: Mapped[str | list | dict] = mapped_column(JSONB)
     # 예: "main", "feedback:<entry_id>"
     thread: Mapped[str] = mapped_column(Text, default="main", server_default="main", index=True)
+    # 저장 순서. Claude API는 tool_use 바로 다음에 tool_result가 와야 하므로 순서가 정확해야 한다.
+    # created_at은 같은 트랜잭션 안에서 값이 같을 수 있어서 순서 기준으로 쓰지 않는다.
+    seq: Mapped[int] = mapped_column(BigInteger, Identity(), unique=True)  # uq_message_seq
 
 
 # ---------------------------------------------------------------------------

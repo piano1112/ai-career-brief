@@ -1,0 +1,7 @@
+{# 답변 칸: 이 요소가 화면에 붙으면 브라우저가 /chat/stream에 연결해서 답을 받아 채운다 #}
+<div class="flex justify-start">
+  <div class="max-w-[85%] rounded-2xl rounded-bl-sm bg-white px-4 py-2 shadow-sm ring-1 ring-slate-200"
+       hx-ext="sse" sse-connect="/chat/stream" sse-close="done">
+    <div class="whitespace-pre-wrap" sse-swap="delta,tool,notice" hx-swap="beforeend"></div>
+  </div>
+</div>

@@ -18,18 +18,18 @@
 **먼저 이것만 만든다.** 나머지 섹션은 설계가 어긋나지 않도록 전체 맥락으로 제공한다.
 
 ### Milestone 1 — 뼈대 (목표: 11/2)
-- [ ] repo 구조, Docker Compose (`web`, `worker`, `db`) 로컬 실행
-- [ ] FastAPI + Jinja + HTMX + Tailwind 기본 레이아웃 (사이드바: 브리핑 / 대화 / 지원현황 / 캘린더 / 나에 대해)
-- [ ] PostgreSQL 스키마 (섹션 4 전체) + Alembic 마이그레이션
-- [ ] `worker` 컨테이너에서 APScheduler가 돌아가는 것 확인 (더미 job 1개)
-- [ ] `.env.example`, README에 실행 방법
+- [x] repo 구조, Docker Compose (`web`, `worker`, `db`) 로컬 실행
+- [x] FastAPI + Jinja + HTMX + Tailwind 기본 레이아웃 (사이드바: 브리핑 / 대화 / 지원현황 / 캘린더 / 나에 대해)
+- [x] PostgreSQL 스키마 (섹션 4 전체) + Alembic 마이그레이션
+- [x] `worker` 컨테이너에서 APScheduler가 돌아가는 것 확인 (더미 job 1개)
+- [x] `.env.example`, README에 실행 방법
 
 ### Milestone 2 — 대화 에이전트 + User Model (목표: 11/9)
-- [ ] 채팅 화면 (HTMX, 스트리밍 응답)
-- [ ] Claude API tool use 기반 대화 에이전트 루프 (섹션 5.2)
-- [ ] 도구: `save_user_fact`, `update_user_fact`, `list_user_facts`, `emit_event`
-- [ ] "나에 대해" 화면: user_fact를 카테고리별로 보기, 직접 수정/삭제/확인(confirmed) 토글
-- [ ] 에이전트가 추측한 사실은 `confirmed=false`로 저장, 사용자 확인 시 true
+- [x] 채팅 화면 (HTMX, 스트리밍 응답)
+- [x] Claude API tool use 기반 대화 에이전트 루프 (섹션 5.2)
+- [x] 도구: `save_user_fact`, `update_user_fact`, `list_user_facts`, `emit_event`
+- [x] "나에 대해" 화면: user_fact를 카테고리별로 보기, 직접 수정/삭제/확인(confirmed) 토글
+- [x] 에이전트가 추측한 사실은 `confirmed=false`로 저장, 사용자 확인 시 true
 
 **완료 기준**: 채팅으로 "나는 Python이 제일 익숙해"라고 말하면 → user_fact가 생기고 → "나에 대해" 화면에 미확인 상태로 보이고 → 내가 확인/수정할 수 있다.
 
@@ -166,6 +166,7 @@
 ### 5.1 공통
 - Claude API tool use 사용. 에이전트 = 시스템 프롬프트 + 도구 목록 + 루프
 - 시스템 프롬프트에 매번 주입: confirmed user_fact 요약, 오늘 날짜(Asia/Seoul), 진행 중 application 요약
+  - → 구현: 시스템 프롬프트는 고정하고, 이 정보는 바뀌었을 때만 사용자 턴 앞에 `<context>` 블록으로 붙인다 (docs/decisions.md 011, preserved thinking·프롬프트 캐시)
 - 언어: 한국어/영어 혼용 사용자. 응답은 사용자 언어를 따른다
 - **정확성 원칙**: 모르면 모른다고 한다. 추측은 추측이라고 표시. 사용자에 대한 새 사실은 "이렇게 이해했는데 맞아?"로 확인 후 confirmed 처리
 

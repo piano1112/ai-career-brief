@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     # LLM (Milestone 2부터 사용). 모델명은 하드코딩하지 않고 환경변수로 받는다.
     anthropic_api_key: str = ""
     claude_model: str = ""
+    # 생각의 깊이. Opus 5.5는 thinking을 끌 수 없고 effort로만 조절한다 (decisions 008).
+    claude_effort: str = "medium"
+    claude_max_tokens: int = 32000
 
     database_url: str = "postgresql+psycopg://brief:brief@localhost:5432/brief"
 

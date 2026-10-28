@@ -1,10 +1,28 @@
 {% extends "base.html" %}
 {% block title %}나에 대해{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">나에 대해</h1>
-<div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-  <p class="text-3xl mb-2">🚧</p>
-  <p>에이전트가 알게 된 나에 대한 사실을 카테고리별로 확인 · 수정합니다.</p>
-  <p class="mt-1 text-sm">Milestone 2에서 구현 예정</p>
+<h1 class="mb-2 text-2xl font-bold">나에 대해</h1>
+<p class="mb-6 text-sm text-slate-500">
+  대화에서 알게 된 사실 {{ total }}개
+  {% if unconfirmed %}· <span class="font-semibold text-amber-700">확인 필요 {{ unconfirmed }}개</span>{% endif %}
+  — 확인된 사실만 자소서·추천의 근거로 써요.
+</p>
+
+{% if not total %}
+  <div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+    <p class="mb-2 text-3xl">🙂</p>
+    <p>아직 저장된 사실이 없어요. <a href="/chat" class="text-indigo-600 underline">대화</a>에서 자기소개를 해 보세요.</p>
+  </div>
+{% endif %}
+
+<div class="flex flex-col gap-6">
+  {% for label, facts in groups if facts %}
+    <section>
+      <h2 class="mb-2 text-sm font-semibold text-slate-600">{{ category_icons[label] }} {{ label }}</h2>
+      <div class="flex flex-col gap-2">
+        {% for fact in facts %}{% include "_fact_card.html" %}{% endfor %}
+      </div>
+    </section>
+  {% endfor %}
 </div>
 {% endblock %}

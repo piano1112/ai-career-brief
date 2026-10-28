@@ -1,0 +1,11 @@
+<div class="fact-card flex items-start gap-3 rounded-xl bg-white p-3 ring-2 ring-indigo-300">
+  <form class="flex flex-1 flex-col gap-2" hx-post="/me/facts/{{ fact.id }}" hx-target="closest .fact-card" hx-swap="outerHTML">
+    <textarea name="content" rows="2" required class="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-500 focus:outline-none">{{ fact.content }}</textarea>
+    <p class="text-xs text-slate-400">저장하면 '확인됨'이 되고, 이전 내용은 이력으로 남아요.</p>
+    <div class="flex gap-2 text-sm">
+      <button class="rounded-lg bg-indigo-600 px-3 py-1 font-semibold text-white hover:bg-indigo-700">저장</button>
+      <button type="button" hx-get="/me/facts/{{ fact.id }}/card" hx-target="closest .fact-card" hx-swap="outerHTML"
+              class="rounded-lg px-3 py-1 text-slate-500 hover:bg-slate-100">취소</button>
+    </div>
+  </form>
+</div>

@@ -1,10 +1,44 @@
 {% extends "base.html" %}
 {% block title %}대화{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">대화</h1>
-<div class="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
-  <p class="text-3xl mb-2">🚧</p>
-  <p>에이전트와 대화하면서 나에 대한 정보를 쌓아갑니다.</p>
-  <p class="mt-1 text-sm">Milestone 2에서 구현 예정</p>
+<h1 class="mb-4 text-2xl font-bold">대화</h1>
+
+<div id="messages" class="mb-4 flex flex-col gap-3">
+  {% if not items and not pending %}
+    <p id="chat-empty" class="rounded-xl bg-white p-4 text-sm text-slate-500 ring-1 ring-slate-200">
+      👋 무엇이든 말해 주세요. 대화하면서 알게 된 내용은 "나에 대해"에 정리돼요.
+    </p>
+  {% endif %}
+  {% for item in items %}
+    {% if item.role == "user" %}
+      <div class="flex justify-end">
+        <div class="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-indigo-600 px-4 py-2 text-white">{{ item.text }}</div>
+      </div>
+    {% elif item.role == "assistant" %}
+      <div class="flex justify-start">
+        <div class="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-bl-sm bg-white px-4 py-2 shadow-sm ring-1 ring-slate-200">{{ item.text }}</div>
+      </div>
+    {% else %}
+      <div class="flex justify-start">
+        <div class="rounded-md bg-slate-100 px-2 py-1 text-xs text-slate-500">🔧 {{ item.text }}</div>
+      </div>
+    {% endif %}
+  {% endfor %}
+  {% if pending %}{% include "_chat_assistant_stream.html" %}{% endif %}
 </div>
+
+<form hx-post="/chat/messages" hx-target="#messages" hx-swap="beforeend"
+      hx-on::after-request="if (event.detail.successful) this.reset()"
+      class="sticky bottom-4 flex gap-2 rounded-2xl bg-white p-2 shadow-md ring-1 ring-slate-200">
+  <textarea name="text" rows="1" required placeholder="메시지를 입력하세요 (Enter 전송, Shift+Enter 줄바꿈)"
+            class="flex-1 resize-none rounded-xl px-3 py-2 focus:outline-none"
+            onkeydown="if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); this.form.requestSubmit(); }"></textarea>
+  <button class="rounded-xl bg-indigo-600 px-4 font-semibold text-white hover:bg-indigo-700">전송</button>
+</form>
+
+<script>
+  // 새 메시지·답변 조각이 붙을 때마다 맨 아래로 스크롤
+  document.body.addEventListener("htmx:afterSwap", () => window.scrollTo(0, document.body.scrollHeight));
+  document.body.addEventListener("htmx:sseMessage", () => window.scrollTo(0, document.body.scrollHeight));
+</script>
 {% endblock %}

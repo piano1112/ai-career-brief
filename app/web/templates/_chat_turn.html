@@ -1,0 +1,6 @@
+{# 첫 메시지를 보내면 빈 화면 안내문을 지운다 (htmx out-of-band 삭제) #}
+<div id="chat-empty" hx-swap-oob="delete"></div>
+<div class="flex justify-end">
+  <div class="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-sm bg-indigo-600 px-4 py-2 text-white">{{ text }}</div>
+</div>
+{% include "_chat_assistant_stream.html" %}

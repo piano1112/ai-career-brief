@@ -4,7 +4,7 @@
 대화를 통해 사용자를 점점 더 정확히 알아가는 개인용 웹앱. 명세는 [SPEC.md](SPEC.md),
 설계 결정 기록은 [docs/decisions.md](docs/decisions.md).
 
-**현재 상태: Milestone 1 (뼈대) + 소스 조사** — 로그인, 기본 레이아웃, DB 스키마, worker 스케줄러, 수집 소스 seed.
+**현재 상태: Milestone 2 (대화 에이전트 + User Model)** — 채팅(스트리밍, Claude tool use), "나에 대해"(사실 확인·수정·삭제), 수집 소스 seed.
 
 ## 구성
 
@@ -93,9 +93,17 @@ python worker.py
 
 ### 테스트 / 린트
 
+DB 테스트는 별도 테스트 DB(`brief_test`)를 쓴다. 없으면 DB 테스트는 건너뛴다.
+
+```bash
+docker compose exec db createdb -U brief brief_test
+```
+
 ```bash
 pytest
 ```
+
+다른 주소를 쓰려면 `TEST_DATABASE_URL` 환경변수를 설정한다. Claude API는 테스트에서 가짜(`tests/fake_llm.py`)로 바꿔 끼우므로 키가 필요 없다.
 
 ```bash
 ruff check . && ruff format --check .
@@ -128,6 +136,10 @@ alembic revision --autogenerate -m "변경 내용"
 ```
 app/
   main.py              # FastAPI 앱 + 로그인 미들웨어
+  llm/                 # client.py: 모든 Claude 호출의 단일 진입점, usage.py: 토큰·비용 기록
+  agents/chat/         # 대화 에이전트: loop.py(루프), tools.py(도구), prompts.py + system_prompt.md
+  user_facts.py        # User Model 조작 (에이전트 도구와 '나에 대해' 화면이 공유)
+  events.py            # agent_event 헬퍼
   config.py            # 환경변수 (여기서만 읽는다)
   auth.py              # 단일 계정 로그인 (bcrypt)
   db/                  # models.py (스키마), session.py

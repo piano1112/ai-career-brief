@@ -20,3 +20,12 @@ def get_db() -> Iterator[Session]:
     """FastAPI 의존성: 요청마다 세션을 열고 끝나면 닫는다."""
     with SessionLocal() as session:
         yield session
+
+
+def get_session_factory() -> sessionmaker:
+    """스트리밍 응답처럼 요청이 끝난 뒤에도 DB를 써야 하는 곳에서 세션을 직접 열 때 쓴다.
+
+    (FastAPI 의존성으로 받은 세션은 응답이 스트리밍되는 도중에 닫힐 수 있다.)
+    테스트에서는 이 의존성을 테스트 DB용 factory로 바꿔 끼운다.
+    """
+    return SessionLocal

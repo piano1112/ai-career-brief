@@ -1,0 +1,24 @@
+<div class="fact-card flex items-start gap-3 rounded-xl bg-white p-3 ring-1 {{ 'ring-slate-200' if fact.confirmed else 'ring-amber-300' }}">
+  <div class="flex-1">
+    <p>{{ fact.content }}</p>
+    <p class="mt-1 text-xs text-slate-400">
+      {% if fact.confirmed %}
+        <span class="rounded bg-emerald-50 px-1.5 py-0.5 font-medium text-emerald-700">확인됨</span>
+      {% else %}
+        <span class="rounded bg-amber-50 px-1.5 py-0.5 font-medium text-amber-700">미확인</span>
+      {% endif %}
+      · {{ fact.source }}
+    </p>
+  </div>
+  <div class="flex shrink-0 gap-1 text-sm">
+    <button hx-post="/me/facts/{{ fact.id }}/toggle-confirm" hx-target="closest .fact-card" hx-swap="outerHTML"
+            class="rounded-lg px-2 py-1 {{ 'text-slate-400 hover:bg-slate-100' if fact.confirmed else 'bg-emerald-600 text-white hover:bg-emerald-700' }}">
+      {{ '확인 취소' if fact.confirmed else '맞아요' }}
+    </button>
+    <button hx-get="/me/facts/{{ fact.id }}/edit" hx-target="closest .fact-card" hx-swap="outerHTML"
+            class="rounded-lg px-2 py-1 text-slate-500 hover:bg-slate-100">수정</button>
+    <button hx-post="/me/facts/{{ fact.id }}/delete" hx-target="closest .fact-card" hx-swap="outerHTML"
+            hx-confirm="이 사실을 삭제할까요? (정정 이력도 함께 지워져요)"
+            class="rounded-lg px-2 py-1 text-red-400 hover:bg-red-50">삭제</button>
+  </div>
+</div>
